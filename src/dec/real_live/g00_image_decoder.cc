@@ -104,13 +104,14 @@ static res::Image decode_v2(
     if (input_stream.read_le<u32>() != regions.size())
         throw err::CorruptDataError("Region count mismatch");
 
-    res::Image image(width, height);
+    res::Image image(width * region_count, height);
     for (const auto &region : regions)
     {
         region->block_offset = input_stream.read_le<u32>();
         region->block_size = input_stream.read_le<u32>();
     }
 
+    size_t region_offset = 0;
     for (const auto &region : regions)
     {
         if (region->block_size <= 0)
@@ -148,9 +149,11 @@ static res::Image decode_v2(
             for (const auto y : algo::range(part_height))
             for (const auto x : algo::range(part_width))
             {
-                image.at(target_x + x, target_y + y) = part.at(x, y);
+                image.at(target_x + x + region_offset, target_y + y) = part.at(x, y);
             }
         }
+
+        region_offset += width;
     }
 
     return image;
